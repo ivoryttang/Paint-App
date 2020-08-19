@@ -1,0 +1,41 @@
+# Paint Project Report #1
+
+This app is allows the user to paint a picture with a wide array (>100) of color choices. The user can undo the last paint stroke and clear the frame to redraw.
+
+### Buttons
+
+Color: opens color chooser dialog box
+Undo: undoes last stroke
+Clear: clears whole frame
+
+### Errors
+
+The last stroke somehow comes back after clearing and drawing again. Likely some error in the paint method.
+
+### Code Overview
+
+DrawingArea.Java
+
+	- paint method for color, undo, and clear button action
+
+SwingPaint.java
+
+	- initialize color chooser
+	- initialize frame, content, control panel
+	- create 3 buttons
+	- adds action listener, mouse listeners
+
+
+Line.java
+
+	- helper class to store properties of lines drawn, including two coordinates between which line is drawn and line color
+
+
+### Major Challenges
+
+One major challenge I came across was getting the clear button to work because I was drawing using the Graphics g in paint method rather than the global variable g.
+With a simple replacement of this.g, I got it to work.
+
+### Acknowledgments
+
+* Mr. Kuszmaul for indicating that I should try and use two for loops for the undo method to erase first, then redraw what you need. With more lines, this would be the quicker method.

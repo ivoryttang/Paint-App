@@ -1,0 +1,224 @@
+Three classes, DrawingArea and SwingPaint and Line
+Function of for-if below:
+loops through all lines drawn
+if its index is the last few (most recently drawn):
+draw over it with background color, effectively erasing it
+if index isn't last few:
+draw with original color, basically don't do anything to it
+effectively codes for what the undo button does
+
+package Paint;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.image.BufferedImage;
+import java.sql.SQLOutput;
+import java.util.ArrayList;
+
+/**
+ * Component for drawing
+ */
+public class DrawingArea extends JComponent {
+
+    //image in which we're going to draw
+    private Image image;
+    // Graphics 2D object
+    private Graphics g;
+    //Mouse Coordinate
+    private int currentX, currentY, oldX, oldY, lastX, lastY;
+    public static Color color;
+    public static boolean clear = false;
+    public static boolean undo = false;
+    public ArrayList<Line> drawnLines = new ArrayList<Line>();
+    public int countUndo = 0;
+
+    public DrawingArea() {
+
+        if (image == null) {
+            //if image to draw null, we create
+            //image = createImage(getSize().width,getSize().height);
+            image = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_ARGB_PRE);
+            g = image.getGraphics();
+            //clear drawing area
+            color = Color.BLACK;
+        }
+
+        setDoubleBuffered(false);
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);
+                oldX = e.getX();
+                oldY = e.getY();
+                repaint();
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                super.mousePressed(e);
+                lastX = e.getX();
+                lastY = e.getY();
+            }
+        });
+
+        addMouseMotionListener(new MouseMotionAdapter() {
+
+            public void mouseDragged(MouseEvent e) {
+                //coord x, y when drag mouse
+                currentX = e.getX();
+                currentY = e.getY();
+                if (g != null) {
+                    //draw line if g context is not null
+                    g.setColor(color);
+                    g.drawLine(oldX, oldY, currentX, currentY);
+                    drawnLines.add(new Line(oldX, oldY, currentX, currentY, color));
+                    //refresh drawing area so repaint
+                    repaint();
+                    //store current coordinates x, y, as old x,y
+                    oldX = currentX;
+                    oldY = currentY;
+                }
+            }
+        });
+    }
+
+    protected void paintComponent(Graphics g) {
+        int startPt = 0;
+        if (clear){
+            System.out.println("Cleared....");
+            g.setColor(getBackground());
+            for (Line l : drawnLines){
+                g.drawLine(l.oldX,l.oldY,l.currentX,l.currentY);
+            }
+            drawnLines.clear();
+            countUndo = 0;
+        }
+        else if (undo){
+
+            System.out.println("undo...");
+       ********* FOR, IF PART ************
+            for (Line l : drawnLines){
+                if (drawnLines.indexOf(l) >= (drawnLines.size() - 50 * countUndo)) {
+                    g.setColor(getBackground());
+                    g.drawLine(l.oldX, l.oldY, l.currentX, l.currentY);
+                }
+            }
+            for (Line l : drawnLines){
+                if (drawnLines.indexOf(l) < (drawnLines.size() - 50 * countUndo)){
+                    g.setColor(l.color);
+                    g.drawLine(l.oldX, l.oldY, l.currentX, l.currentY);
+                }
+            }
+            countUndo++;
+        }
+        else{
+            g.drawImage(image, 0, 0,null);
+            countUndo = 0;
+        }
+    }
+
+    public void setColor(Color c) {
+        DrawingArea.color = c;
+    }
+}
+
+
+package Paint;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class SwingPaint extends JFrame implements ActionListener {
+
+    JButton clearButton, undoButton;
+    public static DrawingArea drawingArea = new DrawingArea();
+    // create a button
+    JButton color = new JButton("Color");
+
+    public void show(){
+
+    }
+
+    // Constructor
+    SwingPaint()
+    {
+        //create new frame
+        JFrame frame = new JFrame("Swing paint");
+        frame.setSize(600,600);
+        frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        frame.setVisible(true);
+
+        Container content = frame.getContentPane();
+        content.setLayout(new BorderLayout());
+
+        JPanel controlPanel = new JPanel();
+        controlPanel.setLayout(new FlowLayout());
+        color.addActionListener(this);
+        controlPanel.add(color);
+
+        clearButton = new JButton("Clear");
+        clearButton.addActionListener(this);
+        //add to panel
+        controlPanel.add(clearButton);
+
+        undoButton = new JButton("Undo");
+        undoButton.addActionListener(this);
+        controlPanel.add(undoButton);
+
+        content.add(controlPanel, BorderLayout.NORTH);
+        content.add(drawingArea, BorderLayout.CENTER);
+        frame.setVisible(true);
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        if (e.getSource() == color){
+            // color chooser Dialog Box
+            Color color = JColorChooser.showDialog(this,
+                    "Select a color", Color.BLACK);
+
+            // set draw color
+            drawingArea.setColor(color);
+            DrawingArea.clear = false;
+            DrawingArea.undo = false;
+        }
+        else if (e.getSource() == clearButton){
+            DrawingArea.clear = true;
+            drawingArea.repaint();
+        }
+        else if (e.getSource() == undoButton){
+            DrawingArea.undo = true;
+            drawingArea.repaint();
+        }
+    }
+
+
+    public static void main(String[] args) {
+        SwingPaint s = new SwingPaint();
+        s.setSize(400, 400);
+        s.setVisible(true);
+        s.setDefaultCloseOperation(EXIT_ON_CLOSE);
+    }
+}
+
+package Paint;
+
+import java.awt.*;
+
+public class Line {
+    int oldX, oldY, currentX, currentY;
+    Color color;
+
+    public Line(int ox, int oy, int cx, int cy, Color c){
+        oldX = ox;
+        oldY = oy;
+        currentX = cx;
+        currentY = cy;
+        color = c;
+    }
+}
